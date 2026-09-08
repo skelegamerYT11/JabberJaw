@@ -1,0 +1,11 @@
+#!/bin/sh
+SET() {
+    echo "none" > /sys/class/leds/$1/trigger 2>/dev/null
+    echo $2 > /sys/class/leds/$1/brightness 2>/dev/null
+}
+case "$1" in
+    FAIL)    SET "red:wlan" 1; SET "green:lan" 0; SET "green:status" 0 ;;
+    SUCCESS) SET "red:wlan" 0; SET "green:lan" 0; SET "green:status" 1 ;;
+    ATTACK)  SET "red:wlan" 0; SET "green:lan" 1; SET "green:status" 0 ;;
+    OFF)     SET "red:wlan" 0; SET "green:lan" 0; SET "green:status" 0 ;;
+esac

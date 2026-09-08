@@ -1,0 +1,19 @@
+#!/bin/sh
+LOCKFILE="/tmp/sharkjack.lock"
+
+logger -t sharkjack "IFACE hotplug: ACTION=$ACTION INTERFACE=$INTERFACE"
+
+if [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "wan" ]; then
+    if [ -f "$LOCKFILE" ]; then
+        logger -t sharkjack "Lockfile exists, payload already running."
+    else
+        touch "$LOCKFILE"
+        logger -t sharkjack "WAN ifup detected, launching payload..."
+        ( /root/payload/payload.sh; rm -f "$LOCKFILE" ) &
+    fi
+fi
+
+if [ "$ACTION" = "ifdown" ] && [ "$INTERFACE" = "wan" ]; then
+    rm -f "$LOCKFILE"
+    logger -t sharkjack "WAN ifdown, lockfile cleared."
+fi

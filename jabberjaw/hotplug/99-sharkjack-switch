@@ -1,0 +1,59 @@
+#!/bin/sh
+# GL-AR300M Toggle Switch Handler
+# The slider switch uses BTN_0 and BTN_1.
+# Usually, right position = BTN_0 pressed, left position = BTN_1 pressed.
+
+logger -t sharkjack-sw "Button event: BUTTON=$BUTTON ACTION=$ACTION"
+
+if [ "$ACTION" = "pressed" ]; then
+  if [ "$BUTTON" = "BTN_0" ] || [ "$BUTTON" = "BTN_1" ]; then
+    # We debounce or just assume if it's pressed, it's the new state.
+    # Let's say BTN_0 is Active Mode (Right) and BTN_1 is Cleanup (Left)
+    
+    if [ "$BUTTON" = "BTN_0" ]; then
+        # Position A: Shark Jack mode (normal operation)
+        logger -t sharkjack-sw "Mode: SHARK JACK ACTIVE"
+        /usr/bin/LED SUCCESS
+        # Ensure watchdog is running
+        /etc/init.d/sharkjack start 2>/dev/null
+        
+    elif [ "$BUTTON" = "BTN_1" ]; then
+        # Position B: Cleanup mode
+        logger -t sharkjack-sw "Mode: CLEANUP - Wiping loot"
+
+        # Visual feedback: blink red/green alternately
+        for i in 1 2 3; do
+          /usr/bin/LED FAIL
+          sleep 0.3
+          /usr/bin/LED ATTACK
+          sleep 0.3
+        done
+
+        # Wipe loot
+        rm -f /root/loot/nmap/*.txt
+        sync
+        logger -t sharkjack-sw "Loot wiped successfully"
+
+        # Confirm with green blink
+        /usr/bin/LED SUCCESS
+        sleep 1
+        /usr/bin/LED OFF
+    fi
+  fi
+fi
+
+# Handle reset button (short press = cleanup fallback)
+if [ "$BUTTON" = "reset" ] && [ "$ACTION" = "released" ]; then
+    logger -t sharkjack-sw "Reset short press: Cleaning loot"
+    for i in 1 2 3; do
+      /usr/bin/LED FAIL
+      sleep 0.3
+      /usr/bin/LED ATTACK
+      sleep 0.3
+    done
+    rm -f /root/loot/nmap/*.txt
+    sync
+    /usr/bin/LED SUCCESS
+    sleep 1
+    /usr/bin/LED OFF
+fi
